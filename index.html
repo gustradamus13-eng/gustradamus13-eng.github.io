@@ -84,6 +84,16 @@ function saveSession(s) {
 function clearSession() {
   try { localStorage.removeItem("bl_session"); } catch (err) { /* ignore */ }
 }
+function loadCache() {
+  try {
+    var raw = JSON.parse(localStorage.getItem("bl_cache") || "null");
+    if (raw) return { purchases: raw.purchases || [], sales: raw.sales || [], baling: raw.baling || [], expenses: raw.expenses || [], hasCache: true };
+  } catch (err) { /* ignore */ }
+  return { purchases: [], sales: [], baling: [], expenses: [], hasCache: false };
+}
+function saveCache(data) {
+  try { localStorage.setItem("bl_cache", JSON.stringify(data)); } catch (err) { /* ignore */ }
+}
 
 function todayStr() { return new Date().toISOString().slice(0, 10); }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
@@ -278,27 +288,30 @@ function ManageUsers(props) {
 function App(props) {
   var user = props.user;
   var tabState = useState("dashboard"); var tab = tabState[0], setTab = tabState[1];
-  var pState = useState([]); var purchases = pState[0], setPurchases = pState[1];
-  var sState = useState([]); var sales = sState[0], setSales = sState[1];
-  var bState = useState([]); var baling = bState[0], setBaling = bState[1];
-  var xState = useState([]); var expenses = xState[0], setExpenses = xState[1];
-  var loadingState = useState(true); var loading = loadingState[0], setLoading = loadingState[1];
+  var cached = loadCache();
+  var pState = useState(cached.purchases); var purchases = pState[0], setPurchases = pState[1];
+  var sState = useState(cached.sales); var sales = sState[0], setSales = sState[1];
+  var bState = useState(cached.baling); var baling = bState[0], setBaling = bState[1];
+  var xState = useState(cached.expenses); var expenses = xState[0], setExpenses = xState[1];
+  var loadingState = useState(cached.hasCache ? false : true); var loading = loadingState[0], setLoading = loadingState[1];
   var errState = useState(""); var loadErr = errState[0], setLoadErr = errState[1];
 
   function refreshAll() {
     return apiGet({ action: "getAll" }).then(function (res) {
       if (res.error) { setLoadErr(res.error); return; }
-      setPurchases(res.purchases || []);
-      setSales(res.sales || []);
-      setBaling(res.baling || []);
-      setExpenses(res.expenses || []);
+      var fresh = { purchases: res.purchases || [], sales: res.sales || [], baling: res.baling || [], expenses: res.expenses || [] };
+      setPurchases(fresh.purchases);
+      setSales(fresh.sales);
+      setBaling(fresh.baling);
+      setExpenses(fresh.expenses);
       setLoadErr("");
+      saveCache(fresh);
     }).catch(function () { setLoadErr("Couldn't reach the server. Showing last-known data."); });
   }
 
   useEffect(function () {
     refreshAll().then(function () { setLoading(false); });
-    var interval = setInterval(refreshAll, 20000); // light polling for shared/live updates
+    var interval = setInterval(refreshAll, 30000); // quiet background refresh for shared/live updates
     return function () { clearInterval(interval); };
   }, []);
 
