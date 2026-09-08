@@ -1,56 +1,584 @@
-# Quickstart for GitHub Pages
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bale Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#1D1A16; --panel:#26221B; --panelAlt:#312B22; --border:#3D3629;
+    --kraft:#BE8A4E; --amber:#E7A93E; --green:#8FAE72; --red:#C7715A;
+    --text:#F1E9DA; --textMuted:#A89A82; --textFaint:#7A6E5B;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; background:var(--bg); color:var(--text);
+    font-family:'IBM Plex Sans',sans-serif; }
+  input, select, button { font-family:'IBM Plex Sans',sans-serif; }
+  .mono { font-family:'IBM Plex Mono',monospace; }
+  .head { font-family:'Oswald',sans-serif; font-weight:600; }
+  ::placeholder { color: var(--textFaint); }
+  table { width:100%; border-collapse:collapse; }
+  th { text-align:left; font-size:11px; color:var(--textMuted); font-weight:500;
+    padding:8px 10px; border-bottom:1px solid var(--border); white-space:nowrap; }
+  td { font-size:13px; padding:9px 10px; border-bottom:1px solid var(--border); white-space:nowrap; }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px 16px; }
+  .grid { display:grid; gap:12px; }
+  @media(min-width:640px){ .grid-4{ grid-template-columns:repeat(4,1fr); } .grid-2{ grid-template-columns:repeat(2,1fr);} }
+  @media(max-width:639px){ .grid-4, .grid-2 { grid-template-columns:repeat(2,1fr); } }
+  input, select { background:var(--panelAlt); border:1px solid var(--border); border-radius:6px;
+    padding:8px 10px; color:var(--text); font-size:13px; outline:none; width:100%; }
+  button { cursor:pointer; }
+  .btn { font-weight:500; font-size:13px; padding:8px 14px; border-radius:6px; border:1px solid var(--border);
+    background:var(--panelAlt); color:var(--text); display:inline-flex; align-items:center; gap:6px; }
+  .btn-primary { background:var(--kraft); color:#241a0e; border:1px solid var(--kraft); }
+  .btn-icon { background:none; border:none; color:var(--textFaint); padding:2px; }
+  .navbtn { display:flex; align-items:center; gap:10px; padding:10px 12px; margin-bottom:2px;
+    border-radius:6px; border:none; background:transparent; color:var(--textMuted);
+    font-weight:500; font-size:14px; cursor:pointer; white-space:nowrap; border-left:3px solid transparent;
+    text-align:left; width:100%; }
+  .navbtn.active { background:var(--panelAlt); color:var(--amber); border-left:3px solid var(--kraft); }
+  .empty { padding:36px 16px; text-align:center; color:var(--textFaint); font-size:13px;
+    border:1px dashed var(--border); border-radius:8px; }
+  .sidebar { background:var(--panel); border-right:1px solid var(--border); flex-shrink:0; }
+  .layout { display:flex; min-height:100vh; }
+  @media(max-width:639px){ .layout{ flex-direction:column; } .sidebar{ border-right:none; border-bottom:1px solid var(--border);} .sidenav{ display:flex; overflow-x:auto; } .sidelabel{ display:none; } }
+  @media(min-width:640px){ .sidebar{ width:200px; } .sidenav{ display:flex; flex-direction:column; } }
+</style>
+</head>
+<body>
+<div id="root">Loading Bale Ledger…</div>
 
-You can use GitHub Pages to showcase open source projects, host a blog, or even share your résumé. This guide will help get you started on creating your next website.
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 
-## Introduction
+<script>
+var e = React.createElement;
+var useState = React.useState;
+var useMemo = React.useMemo;
+var Fragment = React.Fragment;
 
-In this guide, you'll create a user site at `<username>.github.io`.
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+function num(v) { var n = parseFloat(v); return isNaN(n) ? 0 : n; }
+function fmtTon(n) { return (Math.round(n * 100) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " t"; }
+function fmtUSD(n) { return (n < 0 ? "-" : "") + "$" + Math.abs(Math.round(n)).toLocaleString(); }
+function monthKey(d) { return d ? d.slice(0, 7) : ""; }
+function monthLabel(key) {
+  if (!key) return "";
+  var parts = key.split("-");
+  var y = Number(parts[0]), m = Number(parts[1]);
+  return new Date(y, m - 1, 1).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+function load(key) {
+  try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch (err) { return []; }
+}
+function saveData(key, data) {
+  try { localStorage.setItem(key, JSON.stringify(data)); } catch (err) { console.error(err); }
+}
 
-## Creating your website
+var NAV = [
+  { id: "dashboard", label: "Overview" },
+  { id: "purchases", label: "Intake" },
+  { id: "sales", label: "Shipments" },
+  { id: "baling", label: "Baling" },
+  { id: "expenses", label: "Expenses" }
+];
+var EXPENSE_CATEGORIES = ["Utilities", "Staff Wages", "Rent", "Machine Maintenance", "Truck Rental", "Fuel", "Other"];
 
-1. In the upper-right corner of any page, select <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-plus" aria-label="Create something new" role="img"><path d="M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2Z"></path></svg>, then click **New repository**.
+function TrashIcon() {
+  return e("svg", { width: 14, height: 14, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2 },
+    e("path", { d: "M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6" })
+  );
+}
+function PlusIcon() {
+  return e("svg", { width: 14, height: 14, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2 },
+    e("path", { d: "M12 5v14M5 12h14" })
+  );
+}
 
-   ![Screenshot of a GitHub dropdown menu showing options to create new items. The menu item "New repository" is outlined in dark orange.](/assets/images/help/repository/repo-create-global-nav-update.png)
-2. Enter `username.github.io` as the repository name. Replace `username` with your GitHub username. For example, if your username is `octocat`, the repository name should be `octocat.github.io`.
-   ![Screenshot of GitHub Pages settings in a repository. The repository name field contains the text "octocat.github.io" and is outlined in dark orange.](/assets/images/help/pages/create-repository-name-pages.png)
-3. Choose a repository visibility. For more information, see [About repositories](/en/repositories/creating-and-managing-repositories/about-repositories#about-repository-visibility).
-4. Toggle **Add README** to **On**.
-5. Click **Create repository**.
-6. Under your repository name, click **<svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-gear" aria-label="gear" role="img"><path d="M8 0a8.2 8.2 0 0 1 .701.031C9.444.095 9.99.645 10.16 1.29l.288 1.107c.018.066.079.158.212.224.231.114.454.243.668.386.123.082.233.09.299.071l1.103-.303c.644-.176 1.392.021 1.82.63.27.385.506.792.704 1.218.315.675.111 1.422-.364 1.891l-.814.806c-.049.048-.098.147-.088.294.016.257.016.515 0 .772-.01.147.038.246.088.294l.814.806c.475.469.679 1.216.364 1.891a7.977 7.977 0 0 1-.704 1.217c-.428.61-1.176.807-1.82.63l-1.102-.302c-.067-.019-.177-.011-.3.071a5.909 5.909 0 0 1-.668.386c-.133.066-.194.158-.211.224l-.29 1.106c-.168.646-.715 1.196-1.458 1.26a8.006 8.006 0 0 1-1.402 0c-.743-.064-1.289-.614-1.458-1.26l-.289-1.106c-.018-.066-.079-.158-.212-.224a5.738 5.738 0 0 1-.668-.386c-.123-.082-.233-.09-.299-.071l-1.103.303c-.644.176-1.392-.021-1.82-.63a8.12 8.12 0 0 1-.704-1.218c-.315-.675-.111-1.422.363-1.891l.815-.806c.05-.048.098-.147.088-.294a6.214 6.214 0 0 1 0-.772c.01-.147-.038-.246-.088-.294l-.815-.806C.635 6.045.431 5.298.746 4.623a7.92 7.92 0 0 1 .704-1.217c.428-.61 1.176-.807 1.82-.63l1.102.302c.067.019.177.011.3-.071.214-.143.437-.272.668-.386.133-.066.194-.158.211-.224l.29-1.106C6.009.645 6.556.095 7.299.03 7.53.01 7.764 0 8 0Zm-.571 1.525c-.036.003-.108.036-.137.146l-.289 1.105c-.147.561-.549.967-.998 1.189-.173.086-.34.183-.5.29-.417.278-.97.423-1.529.27l-1.103-.303c-.109-.03-.175.016-.195.045-.22.312-.412.644-.573.99-.014.031-.021.11.059.19l.815.806c.411.406.562.957.53 1.456a4.709 4.709 0 0 0 0 .582c.032.499-.119 1.05-.53 1.456l-.815.806c-.081.08-.073.159-.059.19.162.346.353.677.573.989.02.03.085.076.195.046l1.102-.303c.56-.153 1.113-.008 1.53.27.161.107.328.204.501.29.447.222.85.629.997 1.189l.289 1.105c.029.109.101.143.137.146a6.6 6.6 0 0 0 1.142 0c.036-.003.108-.036.137-.146l.289-1.105c.147-.561.549-.967.998-1.189.173-.086.34-.183.5-.29.417-.278.97-.423 1.529-.27l1.103.303c.109.029.175-.016.195-.045.22-.313.411-.644.573-.99.014-.031.021-.11-.059-.19l-.815-.806c-.411-.406-.562-.957-.53-1.456a4.709 4.709 0 0 0 0-.582c-.032-.499.119-1.05.53-1.456l.815-.806c.081-.08.073-.159.059-.19a6.464 6.464 0 0 0-.573-.989c-.02-.03-.085-.076-.195-.046l-1.102.303c-.56.153-1.113.008-1.53-.27a4.44 4.44 0 0 0-.501-.29c-.447-.222-.85-.629-.997-1.189l-.289-1.105c-.029-.11-.101-.143-.137-.146a6.6 6.6 0 0 0-1.142 0ZM11 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM9.5 8a1.5 1.5 0 1 0-3.001.001A1.5 1.5 0 0 0 9.5 8Z"></path></svg> Settings**. If you cannot see the "Settings" tab, select the **<svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-kebab-horizontal" aria-label="More" role="img"><path d="M8 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM1.5 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm13 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"></path></svg>** dropdown menu, then click **Settings**.
+function StatCard(props) {
+  var mono = props.mono !== false;
+  return e("div", { className: "card" },
+    e("div", { style: { fontSize: 11, color: "var(--textMuted)", marginBottom: 6 } }, props.label),
+    e("div", {
+      className: mono ? "mono" : "",
+      style: { fontWeight: 600, fontSize: 21, color: props.accent || "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }
+    }, props.value)
+  );
+}
 
-   ![Screenshot of a repository header showing the tabs. The "Settings" tab is highlighted by a dark orange outline.](/assets/images/help/repository/repo-actions-settings.png)
-7. In the "Code, planning, and automation" section of the sidebar, click **<svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-browser" aria-label="browser" role="img"><path d="M0 2.75C0 1.784.784 1 1.75 1h12.5c.966 0 1.75.784 1.75 1.75v10.5A1.75 1.75 0 0 1 14.25 15H1.75A1.75 1.75 0 0 1 0 13.25ZM14.5 6h-13v7.25c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25Zm-6-3.5v2h6V2.75a.25.25 0 0 0-.25-.25ZM5 2.5v2h2v-2Zm-3.25 0a.25.25 0 0 0-.25.25V4.5h2v-2Z"></path></svg> Pages**.
-8. Under "Build and deployment", under "Source", select **Deploy from a branch**.
-9. Under "Build and deployment", under "Branch", use the branch dropdown menu and select a publishing source.
-   ![Screenshot of Pages settings in a GitHub repository. A menu to select a branch for a publishing source, labeled "None," is outlined in dark orange.](/assets/images/help/pages/publishing-source-drop-down.png)
-10. Optionally, open the `README.md` file of your repository. The `README.md` file is where you will write the content for your site. You can edit the file or keep the default content for now.
-11. Visit `username.github.io` to view your new website. Note that it can take up to 10 minutes for changes to your site to publish after you push the changes to GitHub.
+function Field(props) {
+  return e("div", { style: { display: "flex", flexDirection: "column", gap: 4 } },
+    e("label", { style: { fontSize: 11, color: "var(--textMuted)" } }, props.label),
+    props.children
+  );
+}
 
-## Changing the title and description
+function EmptyState(props) {
+  return e("div", { className: "empty" }, props.text);
+}
 
-By default, the title of your site is `username.github.io`. You can change the title by editing the `_config.yml` file in your repository. You can also add a description for your site.
+function MiniBarChart(props) {
+  var data = props.data, keys = props.keys, colors = props.colors, height = props.height || 200;
+  if (!data.length) return null;
+  var max = 1;
+  data.forEach(function (d) { keys.forEach(function (k) { if ((d[k] || 0) > max) max = d[k] || 0; }); });
+  var barW = 100 / (data.length * (keys.length + 0.6));
+  var groups = data.map(function (d, i) {
+    var groupX = i * (keys.length * barW + barW * 0.6) + barW * 0.3;
+    var rects = keys.map(function (k, ki) {
+      var val = d[k] || 0;
+      var h = (val / max) * (height - 30);
+      var x = groupX + ki * barW;
+      return e("rect", { key: k, x: x, y: height - 24 - h, width: barW * 0.85, height: h, fill: colors[ki], rx: "0.6" });
+    });
+    var label = e("text", {
+      key: "label", x: groupX + (keys.length * barW) / 2, y: height - 8, fontSize: "3.6",
+      fill: "var(--textMuted)", textAnchor: "middle"
+    }, monthLabel(d.month).split(" ")[0]);
+    return e("g", { key: d.month }, rects, label);
+  });
+  return e("svg", { viewBox: "0 0 100 " + height, preserveAspectRatio: "none", width: "100%", height: height }, groups);
+}
 
-1. Click the **Code** tab of your repository.
+function AddPanel(props) {
+  return e("div", { style: { marginBottom: 18 } },
+    e("button", { className: "btn btn-primary", onClick: props.onToggle },
+      e(PlusIcon), " " + (props.open ? "Close" : props.label)),
+    props.open && e("div", { className: "card", style: { marginTop: 12 } },
+      e("div", { className: "grid grid-4", style: { marginBottom: 14 } }, props.children),
+      e("button", {
+        className: "btn btn-primary", onClick: props.onSave, disabled: !props.canSave,
+        style: { opacity: props.canSave ? 1 : 0.5, cursor: props.canSave ? "pointer" : "not-allowed" }
+      }, "Save entry")
+    )
+  );
+}
 
-2. In the file list, check whether `_config.yml` exists. If it does not exist, create a new file named `_config.yml`.
+function App() {
+  var tabState = useState("dashboard"); var tab = tabState[0], setTab = tabState[1];
+  var pState = useState(function () { return load("bl_purchases"); }); var purchases = pState[0], setPurchases = pState[1];
+  var sState = useState(function () { return load("bl_sales"); }); var sales = sState[0], setSales = sState[1];
+  var bState = useState(function () { return load("bl_baling"); }); var baling = bState[0], setBaling = bState[1];
+  var xState = useState(function () { return load("bl_expenses"); }); var expenses = xState[0], setExpenses = xState[1];
 
-3. In the file list, click `_config.yml` to open the file.
+  function addPurchase(entry) { var n = purchases.concat([Object.assign({}, entry, { id: uid() })]); setPurchases(n); saveData("bl_purchases", n); }
+  function delPurchase(id) { var n = purchases.filter(function (p) { return p.id !== id; }); setPurchases(n); saveData("bl_purchases", n); }
+  function addSale(entry) { var n = sales.concat([Object.assign({}, entry, { id: uid() })]); setSales(n); saveData("bl_sales", n); }
+  function delSale(id) { var n = sales.filter(function (s) { return s.id !== id; }); setSales(n); saveData("bl_sales", n); }
+  function addBaling(entry) { var n = baling.concat([Object.assign({}, entry, { id: uid() })]); setBaling(n); saveData("bl_baling", n); }
+  function delBaling(id) { var n = baling.filter(function (b) { return b.id !== id; }); setBaling(n); saveData("bl_baling", n); }
+  function addExpense(entry) { var n = expenses.concat([Object.assign({}, entry, { id: uid() })]); setExpenses(n); saveData("bl_expenses", n); }
+  function delExpense(id) { var n = expenses.filter(function (x) { return x.id !== id; }); setExpenses(n); saveData("bl_expenses", n); }
 
-4. Click <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-pencil" aria-label="The edit icon" role="img"><path d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61Zm.176 4.823L9.75 4.81l-6.286 6.287a.253.253 0 0 0-.064.108l-.558 1.953 1.953-.558a.253.253 0 0 0 .108-.064Zm1.238-3.763a.25.25 0 0 0-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 0 0 0-.354Z"></path></svg> to edit the file.
+  var monthly = useMemo(function () {
+    var map = {};
+    function ensure(k) {
+      if (!map[k]) map[k] = { month: k, kgPurchased: 0, purchaseCost: 0, kgSold: 0, salesRevenue: 0, expenses: 0, bales: 0 };
+      return map[k];
+    }
+    purchases.forEach(function (p) {
+      var net = num(p.gross) - num(p.tare);
+      var r = ensure(monthKey(p.date));
+      r.kgPurchased += net; r.purchaseCost += net * num(p.price);
+    });
+    sales.forEach(function (s) {
+      var r = ensure(monthKey(s.date));
+      r.kgSold += num(s.weight); r.salesRevenue += num(s.weight) * num(s.price);
+    });
+    expenses.forEach(function (x) { var r = ensure(monthKey(x.date)); r.expenses += num(x.amount); });
+    baling.forEach(function (b) { var r = ensure(monthKey(b.date)); r.bales += num(b.bales); });
+    return Object.keys(map).map(function (k) { return map[k]; })
+      .sort(function (a, b) { return a.month.localeCompare(b.month); })
+      .map(function (r) { return Object.assign({}, r, { netProfit: r.salesRevenue - r.purchaseCost - r.expenses }); });
+  }, [purchases, sales, expenses, baling]);
 
-5. The `_config.yml` file already contains a line that specifies the theme for your site. Add a new line with `title:` followed by the title you want. Add a new line with `description:` followed by the description you want. For example:
+  var today = todayStr();
+  var currentMonthKey = today.slice(0, 7);
+  var thisMonth = monthly.filter(function (m) { return m.month === currentMonthKey; })[0] ||
+    { kgPurchased: 0, purchaseCost: 0, kgSold: 0, salesRevenue: 0, expenses: 0, bales: 0, netProfit: 0 };
 
-   ```yaml
-   theme: jekyll-theme-minimal
-   title: Octocat's homepage
-   description: Bookmark this to keep an eye on my project updates!
-   ```
+  var todayStats = useMemo(function () {
+    var kgIn = purchases.filter(function (p) { return p.date === today; })
+      .reduce(function (s, p) { return s + (num(p.gross) - num(p.tare)); }, 0);
+    var kgOut = sales.filter(function (s) { return s.date === today; })
+      .reduce(function (s, x) { return s + num(x.weight); }, 0);
+    var revenue = sales.filter(function (s) { return s.date === today; })
+      .reduce(function (s, x) { return s + num(x.weight) * num(x.price); }, 0);
+    var cost = purchases.filter(function (p) { return p.date === today; })
+      .reduce(function (s, p) { return s + (num(p.gross) - num(p.tare)) * num(p.price); }, 0);
+    var balesToday = baling.filter(function (b) { return b.date === today; })
+      .reduce(function (s, b) { return s + num(b.bales); }, 0);
+    return { kgIn: kgIn, kgOut: kgOut, net: revenue - cost, balesToday: balesToday };
+  }, [purchases, sales, baling, today]);
 
-6. When you are finished editing the file, click **Commit changes**.
+  var stockOnHand = useMemo(function () {
+    var totalPurchasedNet = purchases.reduce(function (s, p) { return s + (num(p.gross) - num(p.tare)); }, 0);
+    var totalBalingInput = baling.reduce(function (s, b) { return s + num(b.input); }, 0);
+    var totalBaleOutput = baling.reduce(function (s, b) { return s + num(b.baleWeight); }, 0);
+    var totalSold = sales.reduce(function (s, x) { return s + num(x.weight); }, 0);
+    var raw = totalPurchasedNet - totalBalingInput;
+    var baled = totalBaleOutput - totalSold;
+    return { raw: raw, baled: baled, total: raw + baled };
+  }, [purchases, baling, sales]);
 
-## Next steps
+  var navButtons = NAV.map(function (item) {
+    return e("button", {
+      key: item.id,
+      className: "navbtn" + (tab === item.id ? " active" : ""),
+      onClick: function () { setTab(item.id); }
+    }, item.label);
+  });
 
-You've successfully created, personalized, and published your first GitHub Pages website, but there's so much more to explore! Here are some helpful resources for taking your next steps with GitHub Pages:
+  var content = null;
+  if (tab === "dashboard") content = e(Dashboard, { today: todayStats, thisMonth: thisMonth, monthly: monthly, currentMonthKey: currentMonthKey, baling: baling, stockOnHand: stockOnHand });
+  else if (tab === "purchases") content = e(Purchases, { items: purchases, onAdd: addPurchase, onDelete: delPurchase });
+  else if (tab === "sales") content = e(Sales, { items: sales, onAdd: addSale, onDelete: delSale });
+  else if (tab === "baling") content = e(Baling, { items: baling, onAdd: addBaling, onDelete: delBaling });
+  else if (tab === "expenses") content = e(Expenses, { items: expenses, onAdd: addExpense, onDelete: delExpense });
 
-* [Adding content to your GitHub Pages site using Jekyll](/en/pages/setting-up-a-github-pages-site-with-jekyll/adding-content-to-your-github-pages-site-using-jekyll#about-content-in-jekyll-sites): This guide explains how to add additional pages to your site.
-* [Configuring a custom domain for your GitHub Pages site](/en/pages/configuring-a-custom-domain-for-your-github-pages-site): You can host your site on GitHub's `github.io` domain or your own custom domain.
+  return e("div", { className: "layout" },
+    e("div", { className: "sidebar" },
+      e("div", {
+        className: "head sidelabel",
+        style: { padding: "18px", fontSize: 17, letterSpacing: 0.3, borderBottom: "1px solid var(--border)" }
+      }, "Bale Ledger"),
+      e("nav", { className: "sidenav", style: { padding: 8 } }, navButtons)
+    ),
+    e("div", { style: { flex: 1, padding: "24px 20px 60px", minWidth: 0 } }, content)
+  );
+}
+
+function Dashboard(props) {
+  var today = props.today, thisMonth = props.thisMonth, monthly = props.monthly,
+    currentMonthKey = props.currentMonthKey, baling = props.baling, stockOnHand = props.stockOnHand;
+  var recent = monthly.slice(-6);
+  var avgYield = useMemo(function () {
+    var rows = baling.filter(function (b) { return monthKey(b.date) === currentMonthKey && num(b.input) > 0; });
+    if (!rows.length) return null;
+    var totalIn = rows.reduce(function (s, b) { return s + num(b.input); }, 0);
+    var totalOut = rows.reduce(function (s, b) { return s + num(b.baleWeight); }, 0);
+    return totalIn > 0 ? (totalOut / totalIn) * 100 : null;
+  }, [baling, currentMonthKey]);
+
+  var stockCards = e("div", { className: "grid grid-4", style: { marginBottom: 24 } },
+    e(StatCard, {
+      label: "Raw stock (unbaled)", value: fmtTon(stockOnHand.raw), accent: stockOnHand.raw < 0 ? "var(--red)" : "var(--kraft)"
+    }),
+    e(StatCard, {
+      label: "Baled stock (ready to sell)", value: fmtTon(stockOnHand.baled), accent: stockOnHand.baled < 0 ? "var(--red)" : "var(--green)"
+    }),
+    e(StatCard, { label: "Total stock on hand", value: fmtTon(stockOnHand.total), accent: "var(--amber)" })
+  );
+
+  var todayCards = e("div", { className: "grid grid-4", style: { marginBottom: 24 } },
+    e(StatCard, { label: "Weighed in (raw)", value: fmtTon(today.kgIn), accent: "var(--kraft)" }),
+    e(StatCard, { label: "Weighed out (baled)", value: fmtTon(today.kgOut), accent: "var(--green)" }),
+    e(StatCard, { label: "Bales produced", value: Math.round(today.balesToday), accent: "var(--amber)" }),
+    e(StatCard, { label: "Net today", value: fmtUSD(today.net), accent: today.net >= 0 ? "var(--green)" : "var(--red)" })
+  );
+
+  var monthCards = e("div", { className: "grid grid-4", style: { marginBottom: 24 } },
+    e(StatCard, { label: "Tons purchased", value: fmtTon(thisMonth.kgPurchased) }),
+    e(StatCard, { label: "Tons sold", value: fmtTon(thisMonth.kgSold) }),
+    e(StatCard, { label: "Revenue", value: fmtUSD(thisMonth.salesRevenue), accent: "var(--green)" }),
+    e(StatCard, { label: "Purchase cost", value: fmtUSD(thisMonth.purchaseCost), accent: "var(--kraft)" }),
+    e(StatCard, { label: "Expenses", value: fmtUSD(thisMonth.expenses), accent: "var(--red)" }),
+    e(StatCard, { label: "Net profit", value: fmtUSD(thisMonth.netProfit), accent: thisMonth.netProfit >= 0 ? "var(--green)" : "var(--red)" }),
+    e(StatCard, { label: "Baling yield", value: avgYield === null ? "—" : avgYield.toFixed(1) + "%", accent: "var(--amber)" }),
+    e(StatCard, { label: "Bales this month", value: Math.round(thisMonth.bales) })
+  );
+
+  var body;
+  if (recent.length > 0) {
+    var chartBlock = e(Fragment, null,
+      e("div", { style: { fontSize: 12, color: "var(--textMuted)", marginBottom: 8 } },
+        "Tons purchased (kraft) vs. sold (green), last " + recent.length + " months"),
+      e("div", { className: "card", style: { marginBottom: 24 } },
+        e(MiniBarChart, { data: recent, keys: ["kgPurchased", "kgSold"], colors: ["#BE8A4E", "#8FAE72"] })
+      ),
+      e("div", { style: { fontSize: 12, color: "var(--textMuted)", marginBottom: 8 } }, "Monthly ledger"),
+      e("div", { style: { overflowX: "auto" } },
+        e("table", null,
+          e("thead", null, e("tr", null,
+            e("th", null, "Month"),
+            e("th", { style: { textAlign: "right" } }, "Tons in"),
+            e("th", { style: { textAlign: "right" } }, "Tons out"),
+            e("th", { style: { textAlign: "right" } }, "Cost"),
+            e("th", { style: { textAlign: "right" } }, "Revenue"),
+            e("th", { style: { textAlign: "right" } }, "Expenses"),
+            e("th", { style: { textAlign: "right" } }, "Net profit")
+          )),
+          e("tbody", null, recent.map(function (m) {
+            return e("tr", { key: m.month },
+              e("td", null, monthLabel(m.month)),
+              e("td", { className: "mono", style: { textAlign: "right" } }, fmtTon(m.kgPurchased)),
+              e("td", { className: "mono", style: { textAlign: "right" } }, fmtTon(m.kgSold)),
+              e("td", { className: "mono", style: { textAlign: "right" } }, fmtUSD(m.purchaseCost)),
+              e("td", { className: "mono", style: { textAlign: "right" } }, fmtUSD(m.salesRevenue)),
+              e("td", { className: "mono", style: { textAlign: "right" } }, fmtUSD(m.expenses)),
+              e("td", { className: "mono", style: { textAlign: "right", color: m.netProfit >= 0 ? "var(--green)" : "var(--red)" } }, fmtUSD(m.netProfit))
+            );
+          }))
+        )
+      )
+    );
+    body = chartBlock;
+  } else {
+    body = e(EmptyState, { text: "No entries yet. Add a purchase, sale, or expense to start building the ledger." });
+  }
+
+  return e("div", null,
+    e("h1", { className: "head", style: { fontSize: 24, marginBottom: 4 } }, "Overview"),
+    e("p", { style: { color: "var(--textMuted)", fontSize: 13, marginTop: 0, marginBottom: 20 } }, "Live totals from every entry across the plant."),
+    e("div", { style: { fontSize: 12, color: "var(--textMuted)", marginBottom: 8 } }, "Stock on hand"),
+    stockCards,
+    e("div", { style: { fontSize: 12, color: "var(--textMuted)", marginBottom: 8 } }, "Today"),
+    todayCards,
+    e("div", { style: { fontSize: 12, color: "var(--textMuted)", marginBottom: 8 } }, "This month — " + monthLabel(currentMonthKey)),
+    monthCards,
+    body
+  );
+}
+
+function Purchases(props) {
+  var items = props.items, onAdd = props.onAdd, onDelete = props.onDelete;
+  var openState = useState(false); var open = openState[0], setOpen = openState[1];
+  function blank() { return { date: todayStr(), supplier: "", truck: "", gross: "", tare: "", price: "", payment: "Cash", notes: "" }; }
+  var formState = useState(blank()); var form = formState[0], setForm = formState[1];
+  function patch(k, v) { var next = Object.assign({}, form); next[k] = v; setForm(next); }
+  var canSave = form.date && form.gross !== "" && form.price !== "";
+  function saveEntry() { if (!canSave) return; onAdd(form); setForm(blank()); setOpen(false); }
+
+  var sorted = items.slice().sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); });
+  var monthTotal = items.filter(function (p) { return monthKey(p.date) === todayStr().slice(0, 7); })
+    .reduce(function (s, p) { return s + (num(p.gross) - num(p.tare)); }, 0);
+
+  var formFields = [
+    e(Field, { key: "date", label: "Date" }, e("input", { type: "date", value: form.date, onChange: function (ev) { patch("date", ev.target.value); } })),
+    e(Field, { key: "supplier", label: "Supplier / source" }, e("input", { placeholder: "City Waste Collectors", value: form.supplier, onChange: function (ev) { patch("supplier", ev.target.value); } })),
+    e(Field, { key: "truck", label: "Truck / plate" }, e("input", { placeholder: "TRK-01", value: form.truck, onChange: function (ev) { patch("truck", ev.target.value); } })),
+    e(Field, { key: "gross", label: "Gross weight (t)" }, e("input", { type: "number", value: form.gross, onChange: function (ev) { patch("gross", ev.target.value); } })),
+    e(Field, { key: "tare", label: "Tare weight (t)" }, e("input", { type: "number", value: form.tare, onChange: function (ev) { patch("tare", ev.target.value); } })),
+    e(Field, { key: "price", label: "Price per ton ($)" }, e("input", { type: "number", step: "0.01", value: form.price, onChange: function (ev) { patch("price", ev.target.value); } })),
+    e(Field, { key: "payment", label: "Payment method" }, e("select", { value: form.payment, onChange: function (ev) { patch("payment", ev.target.value); } },
+      e("option", null, "Cash"), e("option", null, "Bank Transfer"), e("option", null, "Other"))),
+    e(Field, { key: "notes", label: "Notes" }, e("input", { value: form.notes, onChange: function (ev) { patch("notes", ev.target.value); } }))
+  ];
+
+  var table = sorted.length === 0
+    ? e(EmptyState, { text: "No deliveries logged yet." })
+    : e("div", { style: { overflowX: "auto" } },
+        e("table", null,
+          e("thead", null, e("tr", null,
+            e("th", null, "Date"), e("th", null, "Supplier"), e("th", null, "Truck"),
+            e("th", { style: { textAlign: "right" } }, "Net tons"),
+            e("th", { style: { textAlign: "right" } }, "Price/ton"),
+            e("th", { style: { textAlign: "right" } }, "Total"),
+            e("th", null, "Payment"), e("th", null)
+          )),
+          e("tbody", null, sorted.map(function (p) {
+            var net = num(p.gross) - num(p.tare);
+            return e("tr", { key: p.id },
+              e("td", null, p.date), e("td", null, p.supplier || "—"), e("td", null, p.truck || "—"),
+              e("td", { className: "mono", style: { textAlign: "right" } }, fmtTon(net)),
+              e("td", { className: "mono", style: { textAlign: "right" } }, "$" + num(p.price).toFixed(2)),
+              e("td", { className: "mono", style: { textAlign: "right" } }, fmtUSD(net * num(p.price))),
+              e("td", null, p.payment),
+              e("td", { style: { textAlign: "right" } }, e("button", { className: "btn-icon", onClick: function () { onDelete(p.id); }, "aria-label": "Delete" }, e(TrashIcon)))
+            );
+          }))
+        )
+      );
+
+  return e("div", null,
+    e("h1", { className: "head", style: { fontSize: 24, marginBottom: 4 } }, "Intake"),
+    e("p", { style: { color: "var(--textMuted)", fontSize: 13, marginTop: 0 } }, "Every truckload of waste cardboard bought, weighed in and out."),
+    e("div", { style: { fontSize: 13, color: "var(--textMuted)", marginBottom: 16 } }, fmtTon(monthTotal) + " purchased this month"),
+    e(AddPanel, { open: open, onToggle: function () { setOpen(!open); }, label: "Log a delivery", onSave: saveEntry, canSave: canSave }, formFields),
+    table
+  );
+}
+
+function Sales(props) {
+  var items = props.items, onAdd = props.onAdd, onDelete = props.onDelete;
+  var openState = useState(false); var open = openState[0], setOpen = openState[1];
+  function blank() { return { date: todayStr(), customer: "", destination: "", weight: "", price: "", status: "Pending", exportFlag: "N", notes: "" }; }
+  var formState = useState(blank()); var form = formState[0], setForm = formState[1];
+  function patch(k, v) { var next = Object.assign({}, form); next[k] = v; setForm(next); }
+  var canSave = form.date && form.weight !== "" && form.price !== "";
+  function saveEntry() { if (!canSave) return; onAdd(form); setForm(blank()); setOpen(false); }
+
+  var sorted = items.slice().sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); });
+  var monthTotal = items.filter(function (s) { return monthKey(s.date) === todayStr().slice(0, 7); })
+    .reduce(function (s, x) { return s + num(x.weight); }, 0);
+
+  var formFields = [
+    e(Field, { key: "date", label: "Date" }, e("input", { type: "date", value: form.date, onChange: function (ev) { patch("date", ev.target.value); } })),
+    e(Field, { key: "customer", label: "Customer / buyer" }, e("input", { placeholder: "GreenLoop Recycling", value: form.customer, onChange: function (ev) { patch("customer", ev.target.value); } })),
+    e(Field, { key: "destination", label: "Destination" }, e("input", { placeholder: "Local hub or export country", value: form.destination, onChange: function (ev) { patch("destination", ev.target.value); } })),
+    e(Field, { key: "weight", label: "Weight sold (t)" }, e("input", { type: "number", value: form.weight, onChange: function (ev) { patch("weight", ev.target.value); } })),
+    e(Field, { key: "price", label: "Price per ton ($)" }, e("input", { type: "number", step: "0.01", value: form.price, onChange: function (ev) { patch("price", ev.target.value); } })),
+    e(Field, { key: "status", label: "Payment status" }, e("select", { value: form.status, onChange: function (ev) { patch("status", ev.target.value); } },
+      e("option", null, "Paid"), e("option", null, "Pending"))),
+    e(Field, { key: "exportFlag", label: "Export shipment?" }, e("select", { value: form.exportFlag, onChange: function (ev) { patch("exportFlag", ev.target.value); } },
+      e("option", null, "N"), e("option", null, "Y"))),
+    e(Field, { key: "notes", label: "Notes" }, e("input", { value: form.notes, onChange: function (ev) { patch("notes", ev.target.value); } }))
+  ];
+
+  var table = sorted.length === 0
+    ? e(EmptyState, { text: "No shipments logged yet." })
+    : e("div", { style: { overflowX: "auto" } },
+        e("table", null,
+          e("thead", null, e("tr", null,
+            e("th", null, "Date"), e("th", null, "Customer"), e("th", null, "Destination"),
+            e("th", { style: { textAlign: "right" } }, "Weight"),
+            e("th", { style: { textAlign: "right" } }, "Price/ton"),
+            e("th", { style: { textAlign: "right" } }, "Revenue"),
+            e("th", null, "Status"), e("th", null)
+          )),
+          e("tbody", null, sorted.map(function (s) {
+            return e("tr", { key: s.id },
+              e("td", null, s.date), e("td", null, s.customer || "—"),
+              e("td", null, (s.destination || "—") + " ", s.exportFlag === "Y" ? e("span", { style: { color: "var(--amber)" } }, "· export") : null),
+              e("td", { className: "mono", style: { textAlign: "right" } }, fmtTon(num(s.weight))),
+              e("td", { className: "mono", style: { textAlign: "right" } }, "$" + num(s.price).toFixed(2)),
+              e("td", { className: "mono", style: { textAlign: "right" } }, fmtUSD(num(s.weight) * num(s.price))),
+              e("td", null, e("span", { style: { color: s.status === "Paid" ? "var(--green)" : "var(--amber)" } }, s.status)),
+              e("td", { style: { textAlign: "right" } }, e("button", { className: "btn-icon", onClick: function () { onDelete(s.id); }, "aria-label": "Delete" }, e(TrashIcon)))
+            );
+          }))
+        )
+      );
+
+  return e("div", null,
+    e("h1", { className: "head", style: { fontSize: 24, marginBottom: 4 } }, "Shipments"),
+    e("p", { style: { color: "var(--textMuted)", fontSize: 13, marginTop: 0 } }, "Bales sold to recycling plants, exporters, or collection sites."),
+    e("div", { style: { fontSize: 13, color: "var(--textMuted)", marginBottom: 16 } }, fmtTon(monthTotal) + " sold this month"),
+    e(AddPanel, { open: open, onToggle: function () { setOpen(!open); }, label: "Log a shipment", onSave: saveEntry, canSave: canSave }, formFields),
+    table
+  );
+}
+
+function Baling(props) {
+  var items = props.items, onAdd = props.onAdd, onDelete = props.onDelete;
+  var openState = useState(false); var open = openState[0], setOpen = openState[1];
+  function blank() { return { date: todayStr(), machine: "", operator: "", input: "", bales: "", baleWeight: "", downtime: "", notes: "" }; }
+  var formState = useState(blank()); var form = formState[0], setForm = formState[1];
+  function patch(k, v) { var next = Object.assign({}, form); next[k] = v; setForm(next); }
+  var canSave = form.date && form.input !== "" && form.baleWeight !== "";
+  function saveEntry() { if (!canSave) return; onAdd(form); setForm(blank()); setOpen(false); }
+
+  var sorted = items.slice().sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); });
+
+  var formFields = [
+    e(Field, { key: "date", label: "Date" }, e("input", { type: "date", value: form.date, onChange: function (ev) { patch("date", ev.target.value); } })),
+    e(Field, { key: "machine", label: "Machine" }, e("input", { placeholder: "Baler #1", value: form.machine, onChange: function (ev) { patch("machine", ev.target.value); } })),
+    e(Field, { key: "operator", label: "Operator" }, e("input", { value: form.operator, onChange: function (ev) { patch("operator", ev.target.value); } })),
+    e(Field, { key: "input", label: "Input weight (t)" }, e("input", { type: "number", value: form.input, onChange: function (ev) { patch("input", ev.target.value); } })),
+    e(Field, { key: "bales", label: "Bales produced (#)" }, e("input", { type: "number", value: form.bales, onChange: function (ev) { patch("bales", ev.target.value); } })),
+    e(Field, { key: "baleWeight", label: "Total bale weight (t)" }, e("input", { type: "number", value: form.baleWeight, onChange: function (ev) { patch("baleWeight", ev.target.value); } })),
+    e(Field, { key: "downtime", label: "Downtime (hrs)" }, e("input", { type: "number", value: form.downtime, onChange: function (ev) { patch("downtime", ev.target.value); } })),
+    e(Field, { key: "notes", label: "Notes" }, e("input", { value: form.notes, onChange: function (ev) { patch("notes", ev.target.value); } }))
+  ];
+
+  var table = sorted.length === 0
+    ? e(EmptyState, { text: "No baling runs logged yet." })
+    : e("div", { style: { overflowX: "auto" } },
+        e("table", null,
+          e("thead", null, e("tr", null,
+            e("th", null, "Date"), e("th", null, "Machine"), e("th", null, "Operator"),
+            e("th", { style: { textAlign: "right" } }, "Input"),
+            e("th", { style: { textAlign: "right" } }, "Bales"),
+            e("th", { style: { textAlign: "right" } }, "Output"),
+            e("th", { style: { textAlign: "right" } }, "Yield"), e("th", null)
+          )),
+          e("tbody", null, sorted.map(function (b) {
+            var y = num(b.input) > 0 ? (num(b.baleWeight) / num(b.input)) * 100 : null;
+            return e("tr", { key: b.id },
+              e("td", null, b.date), e("td", null, b.machine || "—"), e("td", null, b.operator || "—"),
+              e("td", { className: "mono", style: { textAlign: "right" } }, fmtTon(num(b.input))),
+              e("td", { className: "mono", style: { textAlign: "right" } }, b.bales || 0),
+              e("td", { className: "mono", style: { textAlign: "right" } }, fmtTon(num(b.baleWeight))),
+              e("td", { className: "mono", style: { textAlign: "right", color: (y !== null && y < 90) ? "var(--red)" : "var(--green)" } }, y === null ? "—" : y.toFixed(1) + "%"),
+              e("td", { style: { textAlign: "right" } }, e("button", { className: "btn-icon", onClick: function () { onDelete(b.id); }, "aria-label": "Delete" }, e(TrashIcon)))
+            );
+          }))
+        )
+      );
+
+  return e("div", null,
+    e("h1", { className: "head", style: { fontSize: 24, marginBottom: 4 } }, "Baling"),
+    e("p", { style: { color: "var(--textMuted)", fontSize: 13, marginTop: 0, marginBottom: 20 } }, "Input weight into the baler vs. finished bales out."),
+    e(AddPanel, { open: open, onToggle: function () { setOpen(!open); }, label: "Log a baling run", onSave: saveEntry, canSave: canSave }, formFields),
+    table
+  );
+}
+
+function Expenses(props) {
+  var items = props.items, onAdd = props.onAdd, onDelete = props.onDelete;
+  var openState = useState(false); var open = openState[0], setOpen = openState[1];
+  function blank() { return { date: todayStr(), category: EXPENSE_CATEGORIES[0], description: "", amount: "", method: "Cash" }; }
+  var formState = useState(blank()); var form = formState[0], setForm = formState[1];
+  function patch(k, v) { var next = Object.assign({}, form); next[k] = v; setForm(next); }
+  var canSave = form.date && form.amount !== "";
+  function saveEntry() { if (!canSave) return; onAdd(form); setForm(blank()); setOpen(false); }
+
+  var sorted = items.slice().sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); });
+  var byCategory = useMemo(function () {
+    var map = {};
+    EXPENSE_CATEGORIES.forEach(function (c) { map[c] = 0; });
+    items.forEach(function (it) { map[it.category] = (map[it.category] || 0) + num(it.amount); });
+    return map;
+  }, [items]);
+
+  var categoryCards = e("div", { className: "grid grid-4", style: { marginBottom: 18 } },
+    EXPENSE_CATEGORIES.map(function (c) { return e(StatCard, { key: c, label: c, value: fmtUSD(byCategory[c]) }); })
+  );
+
+  var formFields = [
+    e(Field, { key: "date", label: "Date" }, e("input", { type: "date", value: form.date, onChange: function (ev) { patch("date", ev.target.value); } })),
+    e(Field, { key: "category", label: "Category" }, e("select", { value: form.category, onChange: function (ev) { patch("category", ev.target.value); } },
+      EXPENSE_CATEGORIES.map(function (c) { return e("option", { key: c }, c); }))),
+    e(Field, { key: "description", label: "Description" }, e("input", { value: form.description, onChange: function (ev) { patch("description", ev.target.value); } })),
+    e(Field, { key: "amount", label: "Amount ($)" }, e("input", { type: "number", value: form.amount, onChange: function (ev) { patch("amount", ev.target.value); } })),
+    e(Field, { key: "method", label: "Payment method" }, e("select", { value: form.method, onChange: function (ev) { patch("method", ev.target.value); } },
+      e("option", null, "Cash"), e("option", null, "Bank Transfer"), e("option", null, "Other")))
+  ];
+
+  var table = sorted.length === 0
+    ? e(EmptyState, { text: "No expenses logged yet." })
+    : e("div", { style: { overflowX: "auto" } },
+        e("table", null,
+          e("thead", null, e("tr", null,
+            e("th", null, "Date"), e("th", null, "Category"), e("th", null, "Description"),
+            e("th", { style: { textAlign: "right" } }, "Amount"), e("th", null, "Method"), e("th", null)
+          )),
+          e("tbody", null, sorted.map(function (x) {
+            return e("tr", { key: x.id },
+              e("td", null, x.date), e("td", null, x.category), e("td", null, x.description || "—"),
+              e("td", { className: "mono", style: { textAlign: "right" } }, fmtUSD(num(x.amount))),
+              e("td", null, x.method),
+              e("td", { style: { textAlign: "right" } }, e("button", { className: "btn-icon", onClick: function () { onDelete(x.id); }, "aria-label": "Delete" }, e(TrashIcon)))
+            );
+          }))
+        )
+      );
+
+  return e("div", null,
+    e("h1", { className: "head", style: { fontSize: 24, marginBottom: 4 } }, "Expenses"),
+    e("p", { style: { color: "var(--textMuted)", fontSize: 13, marginTop: 0, marginBottom: 20 } }, "Utilities, staff, rent, maintenance, truck rental."),
+    categoryCards,
+    e(AddPanel, { open: open, onToggle: function () { setOpen(!open); }, label: "Log an expense", onSave: saveEntry, canSave: canSave }, formFields),
+    table
+  );
+}
+
+var rootEl = document.getElementById("root");
+var root = ReactDOM.createRoot(rootEl);
+root.render(e(App));
+</script>
+</body>
+</html>
