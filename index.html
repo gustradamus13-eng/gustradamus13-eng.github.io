@@ -391,7 +391,7 @@ function App(props) {
     return { raw: raw, baled: baled, total: raw + baled };
   }, [purchases, baling, sales]);
 
-  var NAV = NAV_ALL.filter(function (item) { return item.roles.indexOf(user.role) !== -1; });
+  var NAV = NAV_ALL.filter(function (item) { return item.roles.indexOf(String(user.role || "").trim()) !== -1; });
 
   var navButtons = NAV.map(function (item) {
     return e("button", {
@@ -423,6 +423,7 @@ function App(props) {
         style: { padding: "10px 16px", fontSize: 11, color: "var(--textMuted)", borderTop: "1px solid var(--border)" }
       },
         user.name + " · " + user.role,
+        e("div", { style: { fontFamily: "monospace", fontSize: 9, marginTop: 4, wordBreak: "break-all" } }, "debug role: [" + JSON.stringify(user.role) + "]"),
         e("div", null, e("button", { className: "btn", style: { marginTop: 8, fontSize: 11, padding: "4px 8px" }, onClick: props.onLogout }, "Log out"))
       )
     ),
