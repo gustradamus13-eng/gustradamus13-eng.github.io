@@ -85,7 +85,7 @@ var API_URL = "https://script.google.com/macros/s/AKfycbwaoPCqBDNs5m7QGJkpGLboHE
 
 // ---------- Canonical (language-invariant) value lists ----------
 // These exact strings are what get saved to the Google Sheet, regardless of UI language.
-var ROLE_OPTIONS = ["Admin", "Intake", "Sales", "Baler", "IntakeBaler", "Accountant", "Viewer"];
+var ROLE_OPTIONS = ["Admin", "SubAdmin", "Intake", "Sales", "Baler", "IntakeBaler", "Accountant", "Viewer"];
 var EXPENSE_CATEGORIES = ["Utilities", "Staff Wages", "Rent", "Machine Maintenance", "Truck Rental", "Fuel", "Other"];
 var PAYMENT_METHODS = ["Cash", "Bank Transfer", "Other"];
 var PAYMENT_STATUSES = ["Paid", "Pending"];
@@ -204,7 +204,7 @@ var STRINGS = {
     paymentStatusLabels: { Paid: "Paid", Pending: "Pending" },
     exportLabels: { Y: "Y", N: "N" },
     categoryLabels: { Utilities: "Utilities", "Staff Wages": "Staff Wages", Rent: "Rent", "Machine Maintenance": "Machine Maintenance", "Truck Rental": "Truck Rental", Fuel: "Fuel", Other: "Other" },
-    roleLabels: { Admin: "Admin", Intake: "Intake", Sales: "Sales", Baler: "Baler", IntakeBaler: "Intake + Baling", Accountant: "Accountant", Viewer: "Viewer" },
+    roleLabels: { Admin: "Admin", SubAdmin: "Sub Admin", Intake: "Intake", Sales: "Sales", Baler: "Baler", IntakeBaler: "Intake + Baling", Accountant: "Accountant", Viewer: "Viewer" },
     monthNames: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
     tonUnit: "t"
   },
@@ -313,7 +313,7 @@ var STRINGS = {
     paymentStatusLabels: { Paid: "مدفوع", Pending: "معلّق" },
     exportLabels: { Y: "نعم", N: "لا" },
     categoryLabels: { Utilities: "المرافق", "Staff Wages": "رواتب الموظفين", Rent: "الإيجار", "Machine Maintenance": "صيانة الآلات", "Truck Rental": "تأجير الشاحنات", Fuel: "الوقود", Other: "أخرى" },
-    roleLabels: { Admin: "المسؤول", Intake: "الاستلام", Sales: "المبيعات", Baler: "الكبس", IntakeBaler: "الاستلام والكبس", Accountant: "المحاسب", Viewer: "مشاهد" },
+    roleLabels: { Admin: "المسؤول", SubAdmin: "مدير مساعد", Intake: "الاستلام", Sales: "المبيعات", Baler: "الكبس", IntakeBaler: "الاستلام والكبس", Accountant: "المحاسب", Viewer: "مشاهد" },
     monthNames: ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"],
     tonUnit: "طن"
   }
@@ -376,11 +376,11 @@ function monthLabel(key, lang) {
 }
 
 var NAV_ALL = [
-  { id: "dashboard", key: "navDashboard", roles: ["Admin", "Intake", "Sales", "Baler", "IntakeBaler", "Accountant", "Viewer"] },
-  { id: "purchases", key: "navPurchases", roles: ["Admin", "Intake", "IntakeBaler"] },
-  { id: "sales", key: "navSales", roles: ["Admin", "Sales"] },
-  { id: "baling", key: "navBaling", roles: ["Admin", "Baler", "IntakeBaler"] },
-  { id: "expenses", key: "navExpenses", roles: ["Admin", "Accountant"] },
+  { id: "dashboard", key: "navDashboard", roles: ["Admin", "SubAdmin", "Intake", "Sales", "Baler", "IntakeBaler", "Accountant", "Viewer"] },
+  { id: "purchases", key: "navPurchases", roles: ["Admin", "SubAdmin", "Intake", "IntakeBaler"] },
+  { id: "sales", key: "navSales", roles: ["Admin", "SubAdmin", "Sales"] },
+  { id: "baling", key: "navBaling", roles: ["Admin", "SubAdmin", "Baler", "IntakeBaler"] },
+  { id: "expenses", key: "navExpenses", roles: ["Admin", "SubAdmin", "Accountant"] },
   { id: "users", key: "navUsers", roles: ["Admin"] }
 ];
 
