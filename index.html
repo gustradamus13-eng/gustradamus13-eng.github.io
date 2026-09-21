@@ -91,10 +91,21 @@ var PAYMENT_METHODS = ["Cash", "Bank Transfer", "Other"];
 var PAYMENT_STATUSES = ["Paid", "Pending"];
 var EXPORT_FLAGS = ["N", "Y"];
 
-function normalizeRole(r) {
+function normalizeSingleRole(r) {
   var s = String(r || "").trim().toLowerCase();
   var found = ROLE_OPTIONS.filter(function (opt) { return opt.toLowerCase() === s; })[0];
   return found || String(r || "").trim();
+}
+// Splits a role cell like "Baler/Sales" into its valid, canonically-cased parts.
+// A plain single role like "Admin" still works exactly as before (returns ["Admin"]).
+function parseRoles(r) {
+  var tokens = String(r || "").split("/");
+  var out = [];
+  tokens.forEach(function (tok) {
+    var norm = normalizeSingleRole(tok.trim());
+    if (norm && ROLE_OPTIONS.indexOf(norm) !== -1 && out.indexOf(norm) === -1) out.push(norm);
+  });
+  return out;
 }
 
 // ---------- Translations (labels, buttons, headers only — never your typed data) ----------
@@ -376,7 +387,7 @@ function monthLabel(key, lang) {
 }
 
 var NAV_ALL = [
-  { id: "dashboard", key: "navDashboard", roles: ["Admin", "SubAdmin", "Intake", "Sales", "Baler", "IntakeBaler", "Accountant", "Viewer"] },
+  { id: "dashboard", key: "navDashboard", roles: ["Admin", "SubAdmin", "Accountant", "Viewer"] },
   { id: "purchases", key: "navPurchases", roles: ["Admin", "SubAdmin", "Intake", "IntakeBaler"] },
   { id: "sales", key: "navSales", roles: ["Admin", "SubAdmin", "Sales"] },
   { id: "baling", key: "navBaling", roles: ["Admin", "SubAdmin", "Baler", "IntakeBaler"] },
@@ -539,10 +550,20 @@ function ManageUsers(props) {
   }
 
   var rows = users.map(function (u) {
+    var parsed = parseRoles(u.role);
+    var combinedLabel = parsed.map(function (r) { return optLabel(lang, "roleLabels", r); }).join(" / ") || u.role;
+    var isCombo = parsed.length > 1;
     return e("tr", { key: u.name },
       e("td", null, u.name),
-      e("td", null, e("select", { value: normalizeRole(u.role), onChange: function (ev) { changeRole(u.name, ev.target.value); } },
-        ROLE_OPTIONS.map(function (r) { return e("option", { key: r, value: r }, optLabel(lang, "roleLabels", r)); }))),
+      e("td", null,
+        e("div", { className: "mono", style: { fontSize: 11, color: isCombo ? "var(--amber)" : "var(--textMuted)", marginBottom: 4 } }, combinedLabel),
+        e("select", {
+          value: parsed.length === 1 ? parsed[0] : "",
+          onChange: function (ev) { changeRole(u.name, ev.target.value); }
+        },
+          isCombo ? e("option", { value: "", disabled: true }, lang === "ar" ? "— اختر دورًا واحدًا لاستبدال المجموعة —" : "— pick one role to replace combo —") : null,
+          ROLE_OPTIONS.map(function (r) { return e("option", { key: r, value: r }, optLabel(lang, "roleLabels", r)); }))
+      ),
       e("td", { style: { textAlign: "left" } }, e("button", { className: "btn-icon", onClick: function () { removeUser(u.name); }, "aria-label": t(lang, "close") }, e(TrashIcon)))
     );
   });
@@ -559,6 +580,11 @@ function ManageUsers(props) {
       ),
       msg ? e("div", { style: { color: "var(--red)", fontSize: 12, marginBottom: 10 } }, msg) : null,
       e("button", { className: "btn btn-primary", onClick: addUser }, t(lang, "addUser"))
+    ),
+    e("div", { style: { fontSize: 12, color: "var(--textFaint)", marginBottom: 16 } },
+      lang === "ar"
+        ? "لمنح شخص أكثر من دور (مثل الكبس والمبيعات معًا)، افتح ورقة Users في الجدول وضع القيمة مباشرة في خانة role هكذا: Baler/Sales"
+        : "To give someone more than one role (e.g. both Baler and Sales), open the Users tab in your spreadsheet and set the role cell directly to something like: Baler/Sales"
     ),
     loading ? e("div", { style: { color: "var(--textMuted)" } }, t(lang, "loadingUsers")) :
       e("div", { style: { overflowX: "auto" } },
@@ -676,7 +702,8 @@ function App(props) {
     return { raw: raw, baled: baled, total: raw + baled };
   }, [purchases, baling, sales]);
 
-  var NAV = NAV_ALL.filter(function (item) { return item.roles.indexOf(normalizeRole(user.role)) !== -1; });
+  var userRoles = parseRoles(user.role);
+  var NAV = NAV_ALL.filter(function (item) { return item.roles.some(function (r) { return userRoles.indexOf(r) !== -1; }); });
 
   var navButtons = NAV.map(function (item) {
     return e("button", {
@@ -707,7 +734,7 @@ function App(props) {
         className: "sidelabel",
         style: { padding: "10px 16px", fontSize: 11, color: "var(--textMuted)", borderTop: "1px solid var(--border)" }
       },
-        user.name + " · " + optLabel(lang, "roleLabels", normalizeRole(user.role)),
+        user.name + " · " + userRoles.map(function (r) { return optLabel(lang, "roleLabels", r); }).join(" / "),
         e("div", { style: { display: "flex", gap: 6, marginTop: 8 } },
           e("button", {
             className: "btn", onClick: function () { props.onSetLang("en"); },
