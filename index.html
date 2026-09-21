@@ -735,6 +735,8 @@ function App(props) {
         style: { padding: "10px 16px", fontSize: 11, color: "var(--textMuted)", borderTop: "1px solid var(--border)" }
       },
         user.name + " · " + userRoles.map(function (r) { return optLabel(lang, "roleLabels", r); }).join(" / "),
+        e("div", { style: { fontFamily: "monospace", fontSize: 9, marginTop: 4, wordBreak: "break-all" } },
+          "debug raw role: [" + JSON.stringify(user.role) + "] parsed: [" + JSON.stringify(userRoles) + "]"),
         e("div", { style: { display: "flex", gap: 6, marginTop: 8 } },
           e("button", {
             className: "btn", onClick: function () { props.onSetLang("en"); },
